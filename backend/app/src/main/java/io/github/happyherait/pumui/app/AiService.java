@@ -8,17 +8,21 @@ import io.github.happyherait.pumui.app.Models.Suggestions;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import tools.jackson.databind.ObjectMapper;
 
 /** AI는 초안과 수정안만 만든다. 결과는 사람이 확인해 등록해야 저장되고, 체크와 리뷰는 그대로 적용된다. */
 @Service
 public class AiService {
+    private static final Logger log = LoggerFactory.getLogger(AiService.class);
     private static final Set<String> FIXABLE = Set.of("deliveryDate", "soleSourceReason", "notes");
     private static final String DRAFT_SYSTEM = """
             당신은 연구소 구매요청 작성 보조입니다. 연구원의 요청을 propose_request 도구 입력으로 정리합니다.
@@ -98,6 +102,17 @@ public class AiService {
         return new Suggestions(s.summary(), allowed);
     }
 
+    private static String failure(int status) {
+        String hint = switch (status) {
+            case 400 -> "요청 형식이나 크레딧을 확인하세요.";
+            case 401, 403 -> "API 키를 확인하세요.";
+            case 404 -> "모델 이름을 확인하세요.";
+            case 429 -> "호출 한도를 넘었습니다. 잠시 후 다시 시도하세요.";
+            default -> "잠시 후 다시 시도하세요.";
+        };
+        return "AI 호출에 실패했습니다 (HTTP " + status + "). " + hint;
+    }
+
     private String catalog() {
         List<String> items = db.sql("SELECT code || ' ' || name || ' ' || category || ' ' || unit FROM items ORDER BY code").query(String.class).list();
         List<String> suppliers = db.sql("SELECT code || ' ' || name FROM suppliers ORDER BY code").query(String.class).list();
@@ -131,8 +146,13 @@ public class AiService {
                     .map(b -> (Map<String, Object>) b.get("input"))
                     .findFirst()
                     .orElseThrow(() -> new ApiException(HttpStatus.BAD_GATEWAY, "AI_EMPTY", "AI 응답에 결과가 없습니다."));
+        } catch (RestClientResponseException e) {
+            // 응답 본문에는 API 키가 들어 있지 않다.
+            log.warn("Anthropic API 오류 {} model={} body={}", e.getStatusCode().value(), model, e.getResponseBodyAsString());
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "AI_FAILED", failure(e.getStatusCode().value()));
         } catch (RestClientException e) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "AI_FAILED", "AI 호출에 실패했습니다.");
+            log.warn("Anthropic API 연결 실패: {}", e.getMessage());
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "AI_FAILED", "AI 서버에 연결하지 못했습니다. 네트워크를 확인하세요.");
         }
     }
 }

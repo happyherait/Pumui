@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -52,7 +53,7 @@ public class PurchaseRequestService {
 
     public List<Summary> list() {
         return db.sql("""
-                SELECT r.id, r.title, r.status, u.name, r.head_rev, TO_CHAR(r.created_at, 'YYYY-MM-DD HH24:MI'),
+                SELECT r.id, r.title, r.status, u.name, r.head_rev, TO_CHAR(FROM_TZ(r.created_at, '+00:00') AT TIME ZONE '+09:00', 'YYYY-MM-DD HH24:MI'),
                        JSON_VALUE(v.content, '$.quantity' RETURNING NUMBER) * JSON_VALUE(v.content, '$.unitPrice' RETURNING NUMBER)
                 FROM purchase_requests r
                 JOIN app_users u ON u.id = r.requester_id
@@ -147,8 +148,9 @@ public class PurchaseRequestService {
         RevisionView head = revision(id, row.headRev());
         RevisionContent c = head.content();
         PurchaseFacts f = facts.assemble(c);
-        MergeDecision decision = MergeGate.evaluate(
-                CheckEngine.run(f), owners.resolve(f), row.requesterId(), head.hash(), reviewRecords(id));
+        List<CheckResult> checks = CheckEngine.run(f);
+        List<RequiredReview> required = owners.resolve(f);
+        MergeDecision decision = MergeGate.evaluate(checks, required, row.requesterId(), head.hash(), reviewRecords(id));
         if (!decision.allowed()) {
             event(id, userId, "MERGE_REJECTED", String.join("; ", decision.blockers()));
             throw new ApiException(HttpStatus.CONFLICT, "MERGE_BLOCKED", String.join("; ", decision.blockers()));
@@ -174,6 +176,11 @@ public class PurchaseRequestService {
                 .param("price", c.unitPrice())
                 .param("amount", f.amount())
                 .update();
+        db.sql("INSERT INTO pr_merge_snapshots (pr_id, checks, required) VALUES (:id, :checks, :required)")
+                .param("id", id)
+                .param("checks", json.writeValueAsString(checks))
+                .param("required", json.writeValueAsString(required))
+                .update();
         db.sql("UPDATE purchase_requests SET status = 'MERGED' WHERE id = :id").param("id", id).update();
         event(id, userId, "MERGED", "발주로 전환했습니다.");
         return db.sql("SELECT id FROM purchase_orders WHERE pr_id = :id").param("id", id).query(Long.class).single();
@@ -194,7 +201,7 @@ public class PurchaseRequestService {
     public Detail detail(long id) {
         Row row = find(id, false);
         List<RevisionView> revisions = db.sql("""
-                SELECT rev_no, content_hash, author_id, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI'), content
+                SELECT rev_no, content_hash, author_id, TO_CHAR(FROM_TZ(created_at, '+00:00') AT TIME ZONE '+09:00', 'YYYY-MM-DD HH24:MI'), content
                 FROM pr_revisions WHERE pr_id = :id ORDER BY rev_no
                 """)
                 .param("id", id)
@@ -203,11 +210,12 @@ public class PurchaseRequestService {
                 .list();
         RevisionView head = revisions.get(revisions.size() - 1);
         PurchaseFacts f = facts.assemble(head.content());
-        List<CheckResult> checks = CheckEngine.run(f);
-        List<RequiredReview> required = owners.resolve(f);
+        Snapshot snapshot = snapshot(id);
+        List<CheckResult> checks = snapshot != null ? snapshot.checks() : CheckEngine.run(f);
+        List<RequiredReview> required = snapshot != null ? snapshot.required() : owners.resolve(f);
         List<ReviewView> reviews = db.sql("""
                 SELECT p.id, p.reviewer_id, u.name, p.role_code, p.decision, p.comment_text, p.revision_hash,
-                       TO_CHAR(p.created_at, 'YYYY-MM-DD HH24:MI')
+                       TO_CHAR(FROM_TZ(p.created_at, '+00:00') AT TIME ZONE '+09:00', 'YYYY-MM-DD HH24:MI')
                 FROM pr_reviews p JOIN app_users u ON u.id = p.reviewer_id
                 WHERE p.pr_id = :id ORDER BY p.id
                 """)
@@ -216,7 +224,7 @@ public class PurchaseRequestService {
                         rs.getString(5), rs.getString(6), rs.getString(7), head.hash().equals(rs.getString(7)), rs.getString(8)))
                 .list();
         List<EventView> events = db.sql("""
-                SELECT actor_id, event_type, detail, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI')
+                SELECT actor_id, event_type, detail, TO_CHAR(FROM_TZ(created_at, '+00:00') AT TIME ZONE '+09:00', 'YYYY-MM-DD HH24:MI')
                 FROM pr_events WHERE pr_id = :id ORDER BY id
                 """)
                 .param("id", id)
@@ -229,7 +237,23 @@ public class PurchaseRequestService {
                 .orElse(null);
         return new Detail(id, head.content().title(), row.status(), user(row.requesterId()), row.headRev(), f.amount(), head.hash(),
                 revisions, checks, required, reviews,
-                MergeGate.evaluate(checks, required, row.requesterId(), head.hash(), reviewRecords(id)), events, orderId);
+                snapshot != null
+                        ? new MergeDecision(true, List.of())
+                        : MergeGate.evaluate(checks, required, row.requesterId(), head.hash(), reviewRecords(id)),
+                events, orderId);
+    }
+
+    private record Snapshot(List<CheckResult> checks, List<RequiredReview> required) {}
+
+    /** 발주 후에는 예산과 이력이 바뀌므로 발주 시점의 판단을 그대로 보여 준다. */
+    private Snapshot snapshot(long id) {
+        return db.sql("SELECT checks, required FROM pr_merge_snapshots WHERE pr_id = :id")
+                .param("id", id)
+                .query((rs, n) -> new Snapshot(
+                        json.readValue(rs.getString(1), new TypeReference<List<CheckResult>>() {}),
+                        json.readValue(rs.getString(2), new TypeReference<List<RequiredReview>>() {})))
+                .optional()
+                .orElse(null);
     }
 
     private List<ReviewRecord> reviewRecords(long id) {
@@ -241,7 +265,7 @@ public class PurchaseRequestService {
 
     private RevisionView revision(long id, int rev) {
         return db.sql("""
-                SELECT rev_no, content_hash, author_id, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI'), content
+                SELECT rev_no, content_hash, author_id, TO_CHAR(FROM_TZ(created_at, '+00:00') AT TIME ZONE '+09:00', 'YYYY-MM-DD HH24:MI'), content
                 FROM pr_revisions WHERE pr_id = :id AND rev_no = :rev
                 """)
                 .param("id", id)

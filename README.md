@@ -46,11 +46,11 @@ Java 21, Maven, Node.js 22, Docker가 필요합니다. PowerShell 기준입니�
 ```powershell
 docker compose up -d --wait
 mvn -f backend/pom.xml -DskipTests package
-$env:ANTHROPIC_API_KEY = "키"   # 없으면 AI 기능만 503을 돌려줍니다
+$env:ANTHROPIC_API_KEY = "키"   # .env는 자동으로 읽지 않습니다. 없으면 AI 기능만 503을 돌려줍니다
 java -jar backend/app/target/pumui-app-0.1.0.jar
 ```
 
-다른 터미널에서 화면을 실행하고 http://localhost:5173 을 엽니다.
+Oracle은 1522, API는 18080 포트를 씁니다. 다른 터미널에서 화면을 실행하고 http://localhost:5173 을 엽니다.
 
 ```powershell
 cd frontend
@@ -69,7 +69,7 @@ cd frontend; npm test
 
 ## 한계
 
-- 실제 Claude 호출의 품질은 평가하지 않았습니다. 자동 테스트는 가짜 서버를 사용합니다.
+- 실제 Claude 호출은 공격 견적서 시나리오를 1회 수동 실행해 확인했습니다. 반복 평가는 아직 없고, 자동 테스트는 가짜 서버를 사용합니다.
 - 사용자 식별은 데모용 헤더입니다. 운영에는 SSO가 필요합니다.
 - CAS 번호 없이 품명만 있는 규제 물질은 자동으로 찾지 못합니다.
 

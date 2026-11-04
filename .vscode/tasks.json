@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Oracle 시작", "type": "shell", "command": "docker compose up -d --wait" },
+    { "label": "프런트 실행", "type": "shell", "command": "npm run dev", "options": { "cwd": "${workspaceFolder}/frontend" }, "isBackground": true },
+    { "label": "데모 모드 실행", "type": "shell", "command": "npm run dev:demo", "options": { "cwd": "${workspaceFolder}/frontend" }, "isBackground": true },
+    { "label": "백엔드 테스트", "type": "shell", "command": "mvn -f backend/pom.xml verify" }
+  ]
+}

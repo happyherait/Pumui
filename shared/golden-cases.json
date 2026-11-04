@@ -1,0 +1,62 @@
+[
+  {
+    "name": "일반 소모품은 팀장 리뷰만 필요하다",
+    "facts": {"category": "CONSUMABLE", "itemCode": "CON-001", "quantity": 10, "unitPrice": 12000, "spec": {"규격": "100ml"}, "budgetAvailable": 1000000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01", "medianUnitPrice": 12000},
+    "expect": {"amount": 120000, "statuses": {"spec.required": "PASS", "budget.available": "PASS", "price.drift": "PASS"}, "reviewers": ["TEAM_LEAD"], "blocked": false}
+  },
+  {
+    "name": "규제 물질은 금액과 무관하게 안전환경 리뷰가 붙는다",
+    "facts": {"category": "CHEMICAL", "itemCode": "CHM-101", "quantity": 1, "unitPrice": 50000, "spec": {"순도": "99.9%", "CAS": "21324-40-3", "포장단위": "1kg"}, "specCasNo": "21324-40-3", "masterCasNo": "21324-40-3", "regulatedHits": ["21324-40-3 육불화인산리튬"], "budgetAvailable": 1000000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 50000, "statuses": {"hazard.regulated": "REVIEW", "hazard.cas-match": "PASS"}, "reviewers": ["TEAM_LEAD", "EHS"], "blocked": false}
+  },
+  {
+    "name": "사양 CAS를 바꿔 치면 머지가 막힌다",
+    "facts": {"category": "CHEMICAL", "itemCode": "CHM-101", "quantity": 1, "unitPrice": 50000, "spec": {"순도": "99.9%", "CAS": "7732-18-5", "포장단위": "1kg"}, "specCasNo": "7732-18-5", "masterCasNo": "21324-40-3", "budgetAvailable": 1000000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 50000, "statuses": {"hazard.cas-match": "FAIL"}, "reviewers": ["TEAM_LEAD"], "blocked": true}
+  },
+  {
+    "name": "예산을 넘으면 실패한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 3, "unitPrice": 500000, "spec": {"규격": "A"}, "budgetAvailable": 1499999, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 1500000, "statuses": {"budget.available": "FAIL"}, "reviewers": ["TEAM_LEAD"], "blocked": true}
+  },
+  {
+    "name": "예산과 정확히 같으면 통과한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 3, "unitPrice": 500000, "spec": {"규격": "A"}, "budgetAvailable": 1500000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 1500000, "statuses": {"budget.available": "PASS"}, "reviewers": ["TEAM_LEAD"], "blocked": false}
+  },
+  {
+    "name": "납기가 과제 종료 뒤면 실패한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 1, "unitPrice": 1000, "spec": {"규격": "A"}, "budgetAvailable": 100000, "projectEndDate": "2026-11-30", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 1000, "statuses": {"budget.period": "FAIL"}, "reviewers": ["TEAM_LEAD"], "blocked": true}
+  },
+  {
+    "name": "사유 없는 단독 구매는 실패한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 1, "unitPrice": 1000, "spec": {"규격": "A"}, "soleSource": true, "budgetAvailable": 100000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 1000, "statuses": {"supplier.sole-source": "FAIL"}, "reviewers": ["TEAM_LEAD", "PROCUREMENT"], "blocked": true}
+  },
+  {
+    "name": "고가 장비는 구매, 설비, 연구소장 리뷰가 붙는다",
+    "facts": {"category": "EQUIPMENT", "quantity": 1, "unitPrice": 80000000, "spec": {"모델명": "X", "정격전원": "380V", "설치장소": "B동"}, "budgetAvailable": 100000000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 80000000, "statuses": {"budget.available": "PASS"}, "reviewers": ["TEAM_LEAD", "PROCUREMENT", "FACILITY", "RND_DIRECTOR"], "blocked": false}
+  },
+  {
+    "name": "단가 30퍼센트 상승은 구매 리뷰가 붙는다",
+    "facts": {"category": "CONSUMABLE", "quantity": 1, "unitPrice": 1300, "spec": {"규격": "A"}, "budgetAvailable": 100000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01", "medianUnitPrice": 1000},
+    "expect": {"amount": 1300, "statuses": {"price.drift": "REVIEW"}, "reviewers": ["TEAM_LEAD", "PROCUREMENT"], "blocked": false}
+  },
+  {
+    "name": "단가 10퍼센트 상승은 경고만 한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 1, "unitPrice": 1100, "spec": {"규격": "A"}, "budgetAvailable": 100000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01", "medianUnitPrice": 1000},
+    "expect": {"amount": 1100, "statuses": {"price.drift": "WARN"}, "reviewers": ["TEAM_LEAD"], "blocked": false}
+  },
+  {
+    "name": "사내 재고가 충분하면 경고한다",
+    "facts": {"category": "CONSUMABLE", "quantity": 2, "unitPrice": 1000, "spec": {"규격": "A"}, "budgetAvailable": 100000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01", "stockOnHand": 5},
+    "expect": {"amount": 2000, "statuses": {"duplicate.stock": "WARN"}, "reviewers": ["TEAM_LEAD"], "blocked": false}
+  },
+  {
+    "name": "전략물자와 신규 공급사는 각각 리뷰가 붙는다",
+    "facts": {"category": "EQUIPMENT", "quantity": 1, "unitPrice": 1000000, "spec": {"모델명": "X", "정격전원": "220V", "설치장소": "A동"}, "strategicItem": true, "newSupplier": true, "budgetAvailable": 2000000, "projectEndDate": "2027-12-31", "deliveryDate": "2026-12-01"},
+    "expect": {"amount": 1000000, "statuses": {"trade.strategic": "REVIEW", "supplier.new": "REVIEW"}, "reviewers": ["TEAM_LEAD", "PROCUREMENT", "TRADE_COMPLIANCE", "FACILITY"], "blocked": false}
+  }
+]

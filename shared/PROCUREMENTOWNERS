@@ -1,0 +1,16 @@
+# 품의 리뷰어 지정 규칙. CODEOWNERS처럼 조건에 맞는 줄의 역할이 모두 리뷰어가 됩니다.
+# 조건은 공백으로 이어 쓰면 AND입니다.
+#
+# 조건: always, hazard, strategic, sole-source, new-supplier, price-spike,
+#       amount>=금액, category=분류
+
+always                          @TEAM_LEAD
+amount>=10000000                @PROCUREMENT
+sole-source                     @PROCUREMENT
+new-supplier                    @PROCUREMENT
+price-spike                     @PROCUREMENT
+hazard                          @EHS
+strategic                       @TRADE_COMPLIANCE
+category=EQUIPMENT              @FACILITY
+amount>=50000000                @RND_DIRECTOR
+hazard amount>=30000000         @RND_DIRECTOR

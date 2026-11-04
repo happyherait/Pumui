@@ -10,7 +10,8 @@
     "build:demo": "node scripts/build-demo.mjs",
     "site": "node scripts/build-site.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "video": "node scripts/build-demo.mjs && node e2e/record-demo.mjs ../.video ../docs/demo/real && node e2e/make-video.mjs ../.video"
   },
   "dependencies": {
     "@fontsource/gowun-batang": "^5.3.0",

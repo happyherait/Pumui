@@ -1,5 +1,7 @@
 # 품의 Q&A
 
+[데모 영상](https://youtu.be/bzMJ1yRIYxU)
+
 ## 프로젝트
 
 ### 품의는 어떤 프로젝트인가요?

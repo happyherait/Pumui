@@ -68,8 +68,9 @@ public class AiService {
             ObjectMapper json,
             JdbcClient db,
             @Value("${pumui.anthropic.api-key:}") String apiKey,
-            @Value("${pumui.anthropic.model}") String model) {
-        this.http = builder.baseUrl("https://api.anthropic.com").build();
+            @Value("${pumui.anthropic.model}") String model,
+            @Value("${pumui.anthropic.base-url}") String baseUrl) {
+        this.http = builder.baseUrl(baseUrl).build();
         this.json = json;
         this.db = db;
         this.apiKey = apiKey;

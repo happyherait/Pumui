@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API 서버",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "io.github.happyherait.pumui.app.PumuiApplication",
+      "projectName": "pumui-app",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>품의</title>
+<meta name="description" content="구매요청을 Pull Request처럼 다루는 R&D 구매 시스템 프로토타입">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="hero">
+  <div>
+    <p class="brand">품의</p>
+    <h1>구매요청을<br>Pull Request처럼</h1>
+    <p class="lead">연구원이 평소 말로 적으면 AI가 양식을 채웁니다. 예산과 규제는 코드가 확인하고, 사양이 바뀌면 승인은 다시 받습니다.</p>
+    <p class="links"><a class="cta" href="demo/">데모 열기</a><a href="https://github.com/happyherait/pumui">GitHub 저장소</a></p>
+  </div>
+  <table class="approvals" aria-hidden="true">
+    <thead><tr><th>팀장</th><th>구매 담당</th><th>안전환경</th></tr></thead>
+    <tbody><tr><td><span class="stamp">이팀장</span></td><td><span class="stamp alt">박구매</span></td><td><span class="wait">대기</span></td></tr></tbody>
+  </table>
+</header>
+<main>
+  <section class="map">
+    <h2>GitHub의 절차를 구매에 옮겼습니다</h2>
+    <table>
+      <thead><tr><th scope="col">GitHub</th><th scope="col">품의</th></tr></thead>
+      <tbody>
+        <tr><td>Pull Request</td><td>구매요청</td></tr>
+        <tr><td>Commit</td><td>사양 리비전</td></tr>
+        <tr><td>Checks</td><td>예산, 사양, 규제, 중복, 단가 체크</td></tr>
+        <tr><td>CODEOWNERS</td><td>PROCUREMENTOWNERS 리뷰어 규칙</td></tr>
+        <tr><td>Merge</td><td>발주 전환</td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section class="qna">{{QNA}}</section>
+</main>
+<footer>구직용 프로토타입입니다. 회사와 데이터는 모두 가상이며 특정 회사와 관련이 없습니다.</footer>
+</body>
+</html>

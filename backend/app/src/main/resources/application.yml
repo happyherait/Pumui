@@ -8,7 +8,7 @@ spring:
   flyway:
     enabled: true
 server:
-  port: 8080
+  port: ${PUMUI_PORT:18080}
 pumui:
   seed: true
   anthropic:

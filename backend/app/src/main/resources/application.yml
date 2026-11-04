@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: pumui
+  datasource:
+    url: ${PUMUI_DB_URL:jdbc:oracle:thin:@localhost:1521/FREEPDB1}
+    username: ${PUMUI_DB_USER:pumui}
+    password: ${PUMUI_DB_PASSWORD:pumui}
+  flyway:
+    enabled: true
+server:
+  port: 8080
+pumui:
+  seed: true
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-sonnet-5-5}

@@ -2,7 +2,7 @@
 import owners from "../../shared/PROCUREMENTOWNERS?raw";
 import seedJson from "../../shared/seed.json";
 import { amountOf, evaluateMerge, resolveOwners, runChecks, type Facts } from "./engine";
-import type { Api, Catalog, Content, Detail, EventRow, Review, Revision, Sample } from "./types";
+import type { Api, Catalog, Check, Content, Detail, EventRow, RequiredReview, Review, Revision, Sample } from "./types";
 
 const seed = seedJson as unknown as {
   users: Catalog["users"];
@@ -15,7 +15,7 @@ const seed = seedJson as unknown as {
   samples: Sample[];
 };
 
-interface Pr { id: number; requesterId: string; status: string; revisions: Revision[]; reviews: Review[]; events: EventRow[]; orderId: number | null }
+interface Pr { id: number; requesterId: string; status: string; revisions: Revision[]; reviews: Review[]; events: EventRow[]; orderId: number | null; snapshot?: { checks: Check[]; required: RequiredReview[] } }
 interface State { nextId: number; nextReview: number; used: Record<string, number>; orders: { itemCode: string; unitPrice: number; daysAgo: number }[]; prs: Pr[] }
 
 const KEY = "pumui-demo-v1";
@@ -82,14 +82,14 @@ function factsOf(c: Content): Facts {
 function view(pr: Pr): Detail {
   const head = pr.revisions[pr.revisions.length - 1];
   const f = factsOf(head.content);
-  const checks = runChecks(f);
-  const requiredReviews = resolveOwners(owners, f);
+  const checks = pr.snapshot?.checks ?? runChecks(f);
+  const requiredReviews = pr.snapshot?.required ?? resolveOwners(owners, f);
   return {
     id: pr.id, title: head.content.title, status: pr.status,
     requester: seed.users.find((u) => u.id === pr.requesterId)!, headRev: head.revNo, amount: amountOf(f), headHash: head.hash,
     revisions: pr.revisions, checks, requiredReviews,
     reviews: pr.reviews.map((r) => ({ ...r, current: r.revisionHash === head.hash })),
-    merge: evaluateMerge(checks, requiredReviews, pr.requesterId, head.hash, pr.reviews),
+    merge: pr.snapshot ? { allowed: true, blockers: [] } : evaluateMerge(checks, requiredReviews, pr.requesterId, head.hash, pr.reviews),
     events: pr.events, orderId: pr.orderId,
   };
 }
@@ -167,6 +167,7 @@ export const demoApi: Api = {
       throw new Error(d.merge.blockers.join("; "));
     }
     const c = pr.revisions[pr.revisions.length - 1].content;
+    pr.snapshot = { checks: d.checks, required: d.requiredReviews };
     state.used[c.projectCode] += d.amount;
     if (c.itemCode) state.orders.push({ itemCode: c.itemCode, unitPrice: c.unitPrice, daysAgo: 0 });
     pr.status = "MERGED";

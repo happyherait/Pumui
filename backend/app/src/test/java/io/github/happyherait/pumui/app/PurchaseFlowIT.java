@@ -72,6 +72,29 @@ class PurchaseFlowIT {
     }
 
     @Test
+    void mergedRequestKeepsChecksFromMergeTime() {
+        RevisionContent c = new RevisionContent("NMC", "CHEMICAL", "CHM-104", "NMC", 1, "kg", 190_000, "SUP-01", project,
+                "2026-12-31", false, "", "", "", Map.of("순도", "99.5%", "CAS", "346417-97-8", "포장단위", "1kg"));
+        long id = service.create("kim", c);
+        approve(id, "lee", "TEAM_LEAD");
+        var before = service.detail(id).checks();
+
+        service.merge(id, "kim");
+
+        Detail after = service.detail(id);
+        assertThat(after.checks()).isEqualTo(before);
+        assertThat(after.merge().allowed()).isTrue();
+    }
+
+    @Test
+    void timesAreShownInKoreanTime() {
+        long id = service.create("kim", consumable(100_000, ""));
+        var shown = java.time.LocalDateTime.parse(service.detail(id).events().get(0).createdAt().replace(' ', 'T'));
+        var now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
+        assertThat(java.time.Duration.between(shown, now).abs().toMinutes()).isLessThanOrEqualTo(2);
+    }
+
+    @Test
     void newRevisionVoidsApproval() {
         long id = service.create("kim", consumable(100_000, ""));
         approve(id, "lee", "TEAM_LEAD");

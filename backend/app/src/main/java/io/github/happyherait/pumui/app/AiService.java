@@ -127,11 +127,10 @@ public class AiService {
         }
         Map<String, Object> body = Map.of(
                 "model", model,
-                "max_tokens", 1500,
-                "system", system,
+                "max_tokens", 4000,
+                "system", system + "\n반드시 " + tool + " 도구를 호출해 결과를 제출합니다.",
                 "messages", List.of(Map.of("role", "user", "content", user)),
-                "tools", List.of(Map.of("name", tool, "description", "결과를 제출합니다.", "input_schema", schema)),
-                "tool_choice", Map.of("type", "tool", "name", tool));
+                "tools", List.of(Map.of("name", tool, "description", "결과를 제출합니다.", "input_schema", schema)));
         try {
             Map<String, Object> response = http.post()
                     .uri("/v1/messages")
@@ -145,7 +144,7 @@ public class AiService {
                     .filter(b -> "tool_use".equals(b.get("type")))
                     .map(b -> (Map<String, Object>) b.get("input"))
                     .findFirst()
-                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_GATEWAY, "AI_EMPTY", "AI 응답에 결과가 없습니다."));
+                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_GATEWAY, "AI_EMPTY", "AI가 결과를 제출하지 않았습니다. 다시 시도하세요."));
         } catch (RestClientResponseException e) {
             // 응답 본문에는 API 키가 들어 있지 않다.
             log.warn("Anthropic API 오류 {} model={} body={}", e.getStatusCode().value(), model, e.getResponseBodyAsString());

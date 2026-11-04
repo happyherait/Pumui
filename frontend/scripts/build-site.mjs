@@ -9,7 +9,7 @@ const out = resolve(root, ".site");
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
-const repo = "https://github.com/happyherait/pumui/blob/main/docs/";
+const repo = "https://github.com/happyherait/Pumui/blob/main/docs/";
 const qna = marked.parse(readFileSync(resolve(root, "docs/qna.md"), "utf8")).replaceAll('href="adr/', `href="${repo}adr/`);
 writeFileSync(resolve(out, "index.html"), readFileSync(resolve(root, "site/template.html"), "utf8").replace("{{QNA}}", () => qna));
 cpSync(resolve(root, "site/styles.css"), resolve(out, "styles.css"));

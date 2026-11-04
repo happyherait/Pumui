@@ -4,7 +4,7 @@
 
 > 핵심 원칙: **AI는 제안만 합니다. 체크, 리뷰어 지정, 발주 허가는 서버 코드가 맡습니다.**
 
-**[프로젝트 사이트](https://happyherait.github.io/pumui/)** · **[공개 데모](https://happyherait.github.io/pumui/demo/)** · **[Q&A](docs/qna.md)**
+**[프로젝트 사이트](https://happyherait.github.io/Pumui/)** · **[공개 데모](https://happyherait.github.io/Pumui/demo/)** · **[Q&A](docs/qna.md)**
 
 회사, 사용자, 품목, 단가, 규제 등급은 모두 가상입니다. 구직용 프로토타입이며 특정 회사와 관련이 없습니다.
 

@@ -89,7 +89,7 @@ class HttpApiIT {
                 "{\"text\":\"염 2kg\",\"quoteText\":\"" + quote + "\"}");
         assertThat(draft.statusCode()).isEqualTo(200);
         assertThat(draft.body()).contains(quote);
-        assertThat(SENT.get()).contains("claude-sonnet-5-5", "propose_request", "<quote>");
+        assertThat(SENT.get()).contains("claude-sonnet-5-5", "propose_request", "<quote>").doesNotContain("tool_choice");
 
         HttpResponse<String> created = call("POST", "/requests", "kim", draft.body());
         assertThat(created.statusCode()).isEqualTo(200);
